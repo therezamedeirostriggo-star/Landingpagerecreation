@@ -7,6 +7,10 @@ import { useState } from "react";
 import { toast } from "sonner@2.0.3";
 import { Check, Circle, X } from "lucide-react";
 
+// Credenciais do Supabase (inline para funcionar em HTML exportado)
+const SUPABASE_PROJECT_ID = "cgpflsuxtequrtpmgtfw";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNncGZsc3V4dGVxdXJ0cG1ndGZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxNzY3MDEsImV4cCI6MjA3OTc1MjcwMX0.ZhMam9EuPbuM9qCc5EGBo9AHwUcphzVIgUUeIXzgLTQ";
+
 // Componente RadioCard para seleção única
 interface RadioCardProps {
   id: string;
@@ -17,6 +21,13 @@ interface RadioCardProps {
 }
 
 function RadioCard({ id, value, label, selected, onChange }: RadioCardProps) {
+  const handleClick = (e: React.MouseEvent) => {
+    // Prevenir propagação dupla
+    e.preventDefault();
+    console.log('🔘 RadioCard clicado:', { id, value, selected });
+    onChange();
+  };
+
   return (
     <label
       htmlFor={id}
@@ -28,7 +39,7 @@ function RadioCard({ id, value, label, selected, onChange }: RadioCardProps) {
         }
         focus-within:outline-none focus-within:ring-2 focus-within:ring-[#E05A3B] focus-within:ring-offset-2
       `}
-      onClick={onChange}
+      onClick={handleClick}
     >
       <input
         type="radio"
@@ -36,7 +47,9 @@ function RadioCard({ id, value, label, selected, onChange }: RadioCardProps) {
         value={value}
         checked={selected}
         onChange={onChange}
+        onClick={(e) => e.stopPropagation()}
         className="sr-only"
+        aria-label={label}
       />
       <div className="flex-shrink-0">
         {selected ? (
@@ -63,6 +76,13 @@ interface CheckboxCardProps {
 }
 
 function CheckboxCard({ id, label, checked, onChange }: CheckboxCardProps) {
+  const handleClick = (e: React.MouseEvent) => {
+    // Prevenir propagação dupla
+    e.preventDefault();
+    console.log('☑️ CheckboxCard clicado:', { id, checked, newValue: !checked });
+    onChange(!checked);
+  };
+
   return (
     <label
       htmlFor={id}
@@ -74,13 +94,16 @@ function CheckboxCard({ id, label, checked, onChange }: CheckboxCardProps) {
         }
         focus-within:outline-none focus-within:ring-2 focus-within:ring-[#E05A3B] focus-within:ring-offset-2
       `}
+      onClick={handleClick}
     >
       <input
         type="checkbox"
         id={id}
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
+        onClick={(e) => e.stopPropagation()}
         className="sr-only"
+        aria-label={label}
       />
       <div className="flex-shrink-0 mt-0.5">
         {checked ? (
@@ -112,12 +135,21 @@ export function FormularioSection() {
   });
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('🔍 Iniciando envio do formulário...', formData);
     
     // Validar todos os campos obrigatórios
     if (!formData.nome || !formData.cidade || !formData.whatsapp || !formData.email) {
+      console.error('❌ Campos obrigatórios ausentes:', {
+        nome: !!formData.nome,
+        cidade: !!formData.cidade,
+        whatsapp: !!formData.whatsapp,
+        email: !!formData.email
+      });
       toast.error("Por favor, preencha todos os campos obrigatórios.");
       return;
     }
@@ -147,7 +179,61 @@ export function FormularioSection() {
       return;
     }
     
-    setShowSuccessModal(true);
+    // Enviar dados ao servidor
+    setIsSubmitting(true);
+    
+    try {
+      const url = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/make-server-b907af3a/cadastro`;
+      console.log('📡 Enviando para:', url);
+      console.log('📦 Dados:', formData);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      console.log('📬 Resposta recebida:', response.status, response.statusText);
+      
+      const result = await response.json();
+      console.log('📄 Resultado:', result);
+      
+      if (!response.ok) {
+        console.error('❌ Erro ao enviar cadastro:', result);
+        toast.error(result.error || "Erro ao processar cadastro. Tente novamente.");
+        setIsSubmitting(false);
+        return;
+      }
+      
+      console.log('✅ Cadastro enviado com sucesso!', result);
+      setShowSuccessModal(true);
+      
+      // Limpar formulário após sucesso
+      setFormData({
+        nome: "",
+        cidade: "",
+        tempoMotorista: "",
+        horasDia: "",
+        conheceNatura: "",
+        formaVenda: "",
+        whatsapp: "",
+        email: "",
+        autorizacaoDados: false
+      });
+      
+    } catch (error) {
+      console.error('❌ Erro ao enviar cadastro:', error);
+      console.error('❌ Detalhes do erro:', {
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      toast.error("Erro ao conectar com o servidor. Verifique sua conexão e tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -355,8 +441,9 @@ export function FormularioSection() {
                 style={{
                   background: 'linear-gradient(to right, #FF6D00, #E5004B)'
                 }}
+                disabled={isSubmitting}
               >
-                Quero participar
+                {isSubmitting ? 'Enviando...' : 'Quero participar'}
               </Button>
             </div>
           </form>

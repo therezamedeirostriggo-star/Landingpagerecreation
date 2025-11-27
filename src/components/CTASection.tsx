@@ -4,8 +4,7 @@ export function CTASection() {
   const benefits = [
     "Cadastro gratuito e sem burocracia",
     "Suporte completo para iniciantes",
-    "Material de divulgação digital incluso",
-    "Comece a lucrar em 24 horas",
+    "Material de divulgação digital incluso"
   ];
 
   return (

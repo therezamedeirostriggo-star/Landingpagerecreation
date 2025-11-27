@@ -1,7 +1,7 @@
 
-  # Landing Page Recreation
+  # CB em movimento
 
-  This is a code bundle for Landing Page Recreation. The original project is available at https://www.figma.com/design/TIyiO0yCM71rEn9RgMBwga/Landing-Page-Recreation.
+  This is a code bundle for CB em movimento. The original project is available at https://www.figma.com/design/TIyiO0yCM71rEn9RgMBwga/CB-em-movimento.
 
   ## Running the code
 

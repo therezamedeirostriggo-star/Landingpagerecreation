@@ -8,8 +8,35 @@ import { CTASection } from "./components/CTASection";
 import { FormularioSection } from "./components/FormularioSection";
 import { Footer } from "./components/Footer";
 import { Toaster } from "./components/ui/sonner";
+import { AdminPanel } from "./components/AdminPanel";
+import { useState, useEffect } from "react";
 
 export default function App() {
+  // Detectar se está na rota /admin
+  const [isAdminRoute, setIsAdminRoute] = useState(false);
+
+  useEffect(() => {
+    const checkRoute = () => {
+      setIsAdminRoute(window.location.pathname === '/admin');
+    };
+    
+    checkRoute();
+    window.addEventListener('popstate', checkRoute);
+    
+    return () => window.removeEventListener('popstate', checkRoute);
+  }, []);
+
+  // Se estiver na rota /admin, mostrar apenas o painel
+  if (isAdminRoute) {
+    return (
+      <>
+        <AdminPanel />
+        <Toaster />
+      </>
+    );
+  }
+
+  // Caso contrário, mostrar a landing page normal
   return (
     <div className="min-h-screen bg-white">
       <HeroSection />
